@@ -660,7 +660,7 @@ def get_agent_router(
             }
         },
     )
-    async def get_agents(request: Request) -> List[AgentResponse]:
+    async def get_agents(request: Request):
         """Return the list of all Agents present in the contextual OS"""
         # Filter agents based on user's scopes (only if authorization is enabled)
         if getattr(request.state, "authorization_enabled", False):
@@ -696,7 +696,10 @@ def get_agent_router(
                     agent_response = await AgentResponse.from_agent(agent=db_agent, is_component=True)
                     agents.append(agent_response)
 
-        return agents
+        # Serialize to JSON explicitly to avoid Content-Length issues
+        import json
+        agents_data = [agent.model_dump(exclude_none=True) for agent in agents]
+        return JSONResponse(content=agents_data)
 
     @router.get(
         "/agents/{agent_id}",
